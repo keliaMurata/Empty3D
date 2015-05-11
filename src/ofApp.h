@@ -21,7 +21,10 @@ class ofApp : public ofBaseApp
 	
 		ofxFirstPersonCamera	camera;
 	
-		ofTrueTypeFontExt		fontSmall;
+		ofTrueTypeFontExt	fontSmall;
     
-    ofMesh mesh;
+		ofMesh mesh;
+
+		float meshWidth;
+		float meshHeight; 
 };

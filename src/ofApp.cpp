@@ -1,3 +1,8 @@
+/*
+Kelia Murata
+Randomly generated terrain noise program 
+*/
+
 #include "ofApp.h"
 
 //-----------------------------------------------------------------------------------------
@@ -8,41 +13,122 @@ void ofApp::setup()
 	
 	// Give us a starting point for the camera
 	camera.setNearClip(0.01f);
-	camera.setPosition( 0, 4, 10 );
+	camera.setPosition( 0, 70, 70 );
+	camera.lookAt(ofVec3f(0,0,0));
 	camera.setMovementMaxSpeed( 0.1f );
     
-	
+	//sets deminsions for the mesh 
+	meshWidth = 100;
+	meshHeight = 100; 
+
+	//forloops to go through each point in the mesh 
+	for(int i = 0; i < meshWidth; i++)
+	{
+		for (int j = 0; j < meshHeight; j++)
+		{
+			//adds a vertices to each point 
+			mesh.addVertex(ofPoint((i - meshWidth/2), (j - meshHeight/2), 0));
+			//gives an inital color 
+			mesh.addColor(ofColor(255));
+		}
+	}
+
+	//go through each point again 
+	for(int y = 0; y < meshHeight -1; y++)
+	{
+		for(int x = 0; x < meshWidth -1; x++)
+		{
+			//save our points
+			//grabs the point, the point next to it, the one below it, and the one above it in the mesh
+			int p1 = x + meshWidth * y; 
+			int p2 = x + 1 + meshWidth * y;
+			int p3 = x + meshWidth * (y + 1); 
+			int p4 = x + 1 + meshWidth * (y + 1);
+			//create our triangles (counter clockwise) 
+			mesh.addTriangle(p1, p2, p3);
+			mesh.addTriangle(p2, p4, p3);	
+		}
+	}
+	setNormals(mesh);
+
 }
 
 //-----------------------------------------------------------------------------------------
 //
 void ofApp::update()
 {
+	//grab the random time 
+	float timer = ofGetElapsedTimef();
+	//forloops to go through each image 
+	for(int y = 0; y < meshHeight; y++)
+	{
+		for(int x = 0; x < meshWidth; x++)
+		{
+			//look at the points and grab their vertex 
+			int p = x + meshWidth * y;
+			ofPoint point = mesh.getVertex(p);
+
+			//get our noise value samples 
+			float noiseValue = ofSignedNoise(x * .15, y * .15, timer * .15);
+			float noiseValue2 = ofSignedNoise(x * .05, y * .05, timer * .05);
+			noiseValue += noiseValue2 * 2;
+
+			//move the z value according to our noise 
+			point.z = noiseValue * 5;
+			//set the mesh vertext 
+			mesh.setVertex( p, point);
+
+			//check the high of this points z position (which was just reset) 
+			//color the mesh accroding to its z hight to create a topography map 
+			if(point.z < - 5)
+			{
+				mesh.setColor(p, ofColor::blue);
+			}
+			if( (point.z >= -4) && (point.z < 2))
+			{
+				mesh.setColor(p, ofColor::darkGreen);
+			}
+			if( (point.z >= 2) && (point.z < 6))
+			{
+				mesh.setColor(p, ofColor::gray);
+			}
+			if(point.z >= 6)
+			{
+				mesh.setColor(p, ofColor::white);
+			}
+		}
+	}
+	//calls the added function set normals on the mesh 
+	setNormals(mesh);
 }
 
 //-----------------------------------------------------------------------------------------
 //
 void ofApp::draw()
 {
+	//color the background gradiant in a circle 
 	ofBackgroundGradient( ofColor(40,40,40), ofColor(0,0,0), OF_GRADIENT_CIRCULAR);	
 	
 	ofEnableDepthTest();
-	
 	camera.begin();
 	
 		// draw a grid on the floor
 		ofSetColor( ofColor(60) );
 		ofPushMatrix();
 			ofRotate(90, 0, 0, -1);
-			ofDrawGridPlane( 10 );
+			ofDrawGridPlane( 50, 10, false );
 		ofPopMatrix();
-    mesh.draw();
+
+		//rotate our mesh and draw it 
+		ofPushMatrix();
+			ofRotate(90, -1, 0,0);
+			ofTranslate(0, 0, -2.5);
+			mesh.draw();
+		ofPopMatrix();
 	
 	camera.end();
-
-	ofSetColor( ofColor::white );
 	ofDisableDepthTest();
-
+	ofSetColor( ofColor::white );
 
 	fontSmall.drawStringShadowed(ofToString(ofGetFrameRate(),2), ofGetWidth()-35, ofGetHeight() - 6, ofColor::whiteSmoke, ofColor::black );
 }
@@ -92,10 +178,7 @@ void ofApp::setNormals( ofMesh &mesh ){
     mesh.addNormals( norm );
 }
 
-
-
-
-
+//allows user to toggle fullscreen by pressing f key 
 void ofApp::keyPressed(int key)
 {
 	if( key == 'f' )
